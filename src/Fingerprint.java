@@ -55,7 +55,7 @@ public class Fingerprint {
     }
 
     //FFT fast fourier transformation
-    public double [] FFT () {
+    public double [][] FFT () {
         byte[] audioBytes;
         try {
             audioBytes = toByteArray();
@@ -69,26 +69,43 @@ public class Fingerprint {
 
         //When turning into frequency domain we'll need complex numbers:
         //Complex[][] results = new Complex[amountPossible][];
-        double[] realVlas = new double[amountPossible];
+        double[] realVals = new double[amountPossible];
         double[] imagVals = new double[amountPossible];
-        Complex[] complex = new Complex[chunkSize];
+
+        double[][] results = new double[amountPossible][];
+
         //For all the chunks:
         for (int times = 0; times < amountPossible; times++) {
+            Complex[] complex = new Complex[chunkSize];
+
             for (int i = 0; i < chunkSize; i++) {
                 //Put the time domain data into a complex number with imaginary part as 0:
                 complex[i] = new Complex(audioBytes[(times * chunkSize) + i], 0);
             }
-            realVlas[times] = complex[times].getReal();
-            imagVals[times] = complex[times].getImaginary();
+
+//            realVals[times] = complex[times].getReal();
+//            imagVals[times] = complex[times].getImaginary();
+
+            results[times] = fft(complex, true);
         }
 
-        double [] resultFFT = fft(realVlas,imagVals,true);
-        return resultFFT;
+        double [] resultFFT = fft(realVals,imagVals,true);
+        return results;
 
     }
 
 
+    public static double[] fft(final Complex[] inputs, boolean DIRECT){
+        double[] real = new double[inputs.length];
+        double[] imag = new double[inputs.length];
 
+        for(int i = 0; i< inputs.length; i++) {
+            real[i] = inputs[i].getReal();
+            imag[i] = inputs[i].getImaginary();
+        }
+
+        return fft(real, imag, DIRECT);
+    }
 
 
 
