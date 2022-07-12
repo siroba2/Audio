@@ -2,9 +2,23 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="bb9579cf-f1e0-4aec-8283-a389e4e97543" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/uiDesigner.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TestAudio/testAudio.wav" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/AudioFile.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/AudioFileBuffer.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/AudioFileHeader.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Directory.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/FFT.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/FingerPrint.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Hash.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/HashedPeak.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Peak.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Spectrogram.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Test2.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Fingerprint.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Fingerprint.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/TestAudio/Kate Bush - Running Up That Hill (Song Lyrics).wav" beforeDir="false" afterPath="$PROJECT_DIR$/TestAudio/testAudio.mp4" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Fingerprint.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/V1.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Test.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Test.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -35,17 +49,22 @@
   &quot;keyToString&quot;: {
     &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
     &quot;project.structure.last.edited&quot;: &quot;Global Libraries&quot;,
     &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
     &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;
   }
 }</component>
   <component name="RecentsManager">
+    <key name="CreateClassDialog.RecentsKey">
+      <recent name="" />
+      <recent name="Ç" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/TestAudio" />
     </key>
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Application.Test2">
     <configuration name="Test" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="Test" />
       <module name="Audio" />
@@ -53,8 +72,16 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
+    <configuration name="Test2" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="Test2" />
+      <module name="Audio" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Application.Test2" />
         <item itemvalue="Application.Test" />
       </list>
     </recent_temporary>
