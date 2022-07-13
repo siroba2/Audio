@@ -1,86 +1,56 @@
-import org.apache.commons.math3.complex.Complex;
-
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.util.Arrays;
 
 public class Test {
 
-    public static void main(String args[]){
+    public static void main (String[] args){
 
-        V1 audio = new V1("TestAudio/testAudio.wav",0);
-        try {
-            audio.toByteArray();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        String filename = "testAudio.wav";
 
-        Complex [][] resultFFT= audio.FFT();
-        printMatrix(resultFFT);
+        // create a wave object
+        Wave wave = new Wave("TestAudio/testAudio.wav");
+       //Wave wave2 = new Wave("TestAudio/testAudio2.wav");
+        Wave wave2 = new Wave("TestAudio/PTN.wav");
 
-        //FingerprintV2 audio = new FingerprintV2("TestAudio/Kate Bush - Running Up That Hill (Song Lyrics).wav");
-        //int[] fft =audio.FFT(32,-1);
-        //System.out.println(Arrays.toString(fft));
+        // get the fingerprint
+        byte[] fingerprint=wave.getFingerprint();
+        byte[] fingerprint2 =wave2.getFingerprint();
+
+        // dump the fingerprint
+        FingerprintManager fingerprintManager=new FingerprintManager();
+        fingerprintManager.saveFingerprintAsFile(fingerprint, "out/"+filename+".fingerprint");
+
+        FingerprintManager fingerprintManager2=new FingerprintManager();
+        fingerprintManager2.saveFingerprintAsFile(fingerprint, "out/"+filename+".fingerprint");
+
+        // load fingerprint from file
+        byte[] loadedFp=fingerprintManager.getFingerprintFromFile("out/"+filename+".fingerprint");
+        byte[] loadedFp2=fingerprintManager2.getFingerprintFromFile("out/"+filename+".fingerprint");
+		
+		/*
+		// fingerprint bytes checking
+		for (int i=0; i<fingerprint.length; i++){
+			System.out.println(fingerprint[i]+" vs "+loadedFp[i]);
+		}
+		*/
+
+        String fingerprintStr = Arrays.toString(fingerprint);
+        String fingerprintStr2 = Arrays.toString(fingerprint2);
+
+        /*System.out.println(fingerprintStr);
+        System.out.println(fingerprintStr2);
+        System.out.println(fingerprintStr2.length());*/
+
+        String hash = wave.hash(fingerprint, 1024);
+        System.out.println(hash);
+
+        String hash2= wave.hash(fingerprint2, 1024);
+        System.out.println(hash2);
+
+        int distance = wave.hammingDist(hash2, hash);
+        System.out.println(distance);
 
 
-    }
 
-    public static void printMatrix(double [][] matrix) {
-        BufferedWriter out = null;
 
-        try {
-            FileWriter fstream = new FileWriter("out.txt", true); //true tells to append data.
-            out = new BufferedWriter(fstream);
-
-            for (double[] doubles : matrix) {
-                out.write("\n| ");
-                for (double aDouble : doubles) {
-                    out.write(Double.toString(aDouble));
-                    out.write(" ");
-                }
-                out.write("|");
-            }
-
-            out.write("\n========================== EOF ===========================\n");
-        } catch (IOException e) {
-            System.err.println("Error: " + e.getMessage());
-        }
-
-        if(out != null) {
-            try {
-                out.close();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-    public static void printMatrix(Complex[][] matrix) {
-        BufferedWriter out = null;
-
-        try {
-            FileWriter fstream = new FileWriter("out.txt", true); //true tells to append data.
-            out = new BufferedWriter(fstream);
-
-            for (Complex[] doubles : matrix) {
-                out.write("\n| ");
-                for (Complex aDouble : doubles) {
-                    out.write("(" + Double.toString(aDouble.getReal()) + ", " + Double.toString(aDouble.getImaginary()) + "i)");
-                    out.write(" ");
-                }
-                out.write("|");
-            }
-
-            out.write("\n========================== EOF ===========================\n");
-        } catch (IOException e) {
-            System.err.println("Error: " + e.getMessage());
-        }
-
-        if(out != null) {
-            try {
-                out.close();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
     }
 }

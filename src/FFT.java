@@ -1,3 +1,4 @@
+
 public final class FFT {
 
     private double[] w;

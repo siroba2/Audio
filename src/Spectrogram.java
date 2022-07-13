@@ -1,212 +1,191 @@
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
+public class Spectrogram{
 
-import javax.imageio.ImageIO;
+    public static final int SPECTROGRAM_DEFAULT_FFT_SAMPLE_SIZE = 1024;
+    public static final int SPECTROGRAM_DEFAULT_OVERLAP_FACTOR = 0;	// 0 for no overlapping
 
-
-public class Spectrogram {
-
-    /**
-     * The sample size to use for the FFT
-     */
-    private static final int FFT_SAMPLE_SIZE = 4096;
-
-    /**
-     * Used when calculating the overlap for amplitudes
-     */
-    private static final int OVERLAP_FACTOR = 2;
+    private Wave wave;
+    private double[][] spectrogram;	// relative spectrogram
+    private double[][] absoluteSpectrogram;	// absolute spectrogram
+    private int fftSampleSize;	// number of sample in fft, the value needed to be a number to power of 2
+    private int overlapFactor;	// 1/overlapFactor overlapping, e.g. 1/4=25% overlapping
+    private int numFrames;	// number of frames of the spectrogram
+    private int framesPerSecond;	// frame per second of the spectrogram
+    private int numFrequencyUnit;	// number of y-axis unit
+    private double unitFrequency;	// frequency per y-axis unit
 
     /**
-     * The audio file that we are currently working with
-     */
-    private final AudioFile audioFile;
-
-    /**
-     * The spectrogram data for the audio file
-     */
-    private double[][] data;
-
-    /**
-     * Creates an object that can generate / render the spectrogram
-     * data for the given audio file
+     * Constructor
      *
-     * @param audioFile The current audio file to work with
+     * @param wave
      */
-    public Spectrogram(AudioFile audioFile) {
-        this.audioFile = audioFile;
+    public Spectrogram(Wave wave) {
+        this.wave=wave;
+        // default
+        this.fftSampleSize=SPECTROGRAM_DEFAULT_FFT_SAMPLE_SIZE;
+        this.overlapFactor=SPECTROGRAM_DEFAULT_OVERLAP_FACTOR;
+        buildSpectrogram();
     }
 
     /**
-     * Creates an image of the spectrogram
+     * Constructor
      *
-    S
+     * @param wave
+     * @param fftSampleSize	number of sample in fft, the value needed to be a number to power of 2
+     * @param overlapFactor	1/overlapFactor overlapping, e.g. 1/4=25% overlapping, 0 for no overlapping
      */
-    public void render(String filename) {
-        // get the spectrogram data
-        double[][] spectrogram = getData();
+    public Spectrogram(Wave wave, int fftSampleSize, int overlapFactor) {
+        this.wave=wave;
 
-        // get the image size
-        int width = spectrogram.length;
-        int height = spectrogram[0].length;
-
-        // generate the image
-        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-        for(int i = 0; i < width; ++i) {
-            for(int j = 0; j < height; ++j) {
-                image.setRGB(i, j, 255 - (int) (spectrogram[i][j]) * 255);
-            }
+        if (Integer.bitCount(fftSampleSize)==1){
+            this.fftSampleSize=fftSampleSize;
+        }
+        else{
+            System.err.print("The input number must be a power of 2");
+            this.fftSampleSize=SPECTROGRAM_DEFAULT_FFT_SAMPLE_SIZE;
         }
 
-        // save the image
-        try {
-            ImageIO.write(image, "png", new File(filename));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        this.overlapFactor=overlapFactor;
+
+        buildSpectrogram();
     }
 
     /**
-     * Generates the spectrogram for the given audio file
-     *
-     * @return The spectrogram
+     * Build spectrogram
      */
-    public double[][] getData() {
-        if(data != null) {
-            return data;
-        }
+    private void buildSpectrogram(){
 
-        short[] amplitudes = audioFile.getSampleAmplitudes();
-        int samples = amplitudes.length;
+        short[] amplitudes=wave.getSampleAmplitudes();
+        int numSamples = amplitudes.length;
 
-        // calculate the overlap
-        if(OVERLAP_FACTOR > 1) {
-            int numOverlappedSamples = samples * OVERLAP_FACTOR;
-            int backSamples = FFT_SAMPLE_SIZE * (OVERLAP_FACTOR-1) / OVERLAP_FACTOR;
-            int fftSampleSize_1= FFT_SAMPLE_SIZE - 1;
-            short[] overlapAmp = new short[numOverlappedSamples];
-            int position = 0;
-            for (int i = 0; i < amplitudes.length; ++i){
-                overlapAmp[position++] = amplitudes[i];
-                if (position % FFT_SAMPLE_SIZE == fftSampleSize_1) {
-                    i -= backSamples;
+        int pointer=0;
+        // overlapping
+        if (overlapFactor>1){
+            int numOverlappedSamples=numSamples*overlapFactor;
+            int backSamples=fftSampleSize*(overlapFactor-1)/overlapFactor;
+            int fftSampleSize_1=fftSampleSize-1;
+            short[] overlapAmp= new short[numOverlappedSamples];
+            pointer=0;
+            for (int i=0; i<amplitudes.length; i++){
+                overlapAmp[pointer++]=amplitudes[i];
+                if (pointer%fftSampleSize==fftSampleSize_1){
+                    // overlap
+                    i-=backSamples;
                 }
             }
-            samples = numOverlappedSamples;
-            amplitudes = overlapAmp;
+            numSamples=numOverlappedSamples;
+            amplitudes=overlapAmp;
         }
+        // end overlapping
 
-        // get the number of frames
-        int frames = samples / FFT_SAMPLE_SIZE;
+        numFrames=numSamples/fftSampleSize;
+        framesPerSecond=(int)(numFrames/wave.length());
 
-        // get the hamming window
-        double[] window = getHammingWindow();
+        // set signals for fft
+        WindowFunction window = new WindowFunction();
+        window.setWindowType("Hamming");
+        double[] win=window.generate(fftSampleSize);
 
-        // calculate the signals
-        double[][] signals = new double[frames][];
-        for(int f = 0; f < frames; ++f) {
-            signals[f] = new double[FFT_SAMPLE_SIZE];
-            int start = f * FFT_SAMPLE_SIZE;
-            for(int n = 0; n <  FFT_SAMPLE_SIZE; ++n) {
-                signals[f][n] = amplitudes[start + n] * window[n];
+        double[][] signals=new double[numFrames][];
+        for(int f=0; f<numFrames; f++) {
+            signals[f]=new double[fftSampleSize];
+            int startSample=f*fftSampleSize;
+            for (int n=0; n<fftSampleSize; n++){
+                signals[f][n]=amplitudes[startSample+n]*win[n];
             }
         }
+        // end set signals for fft
 
-        // calculate the absolute spectogram
-        double[][] absolute = new double[frames][];
-        for(int i = 0; i < frames; ++i) {
-            absolute[i] = getMagnitudes(signals[i]);
+        absoluteSpectrogram=new double[numFrames][];
+        // for each frame in signals, do fft on it
+        FastFourierTransform fft = new FastFourierTransform();
+        for (int i=0; i<numFrames; i++){
+            absoluteSpectrogram[i]=fft.getMagnitudes(signals[i]);
         }
 
-        // normalize the absolute spectrogram
-        if(absolute.length > 0) {
+        if (absoluteSpectrogram.length>0){
 
-            int numFreqUnit = absolute[0].length;
+            numFrequencyUnit=absoluteSpectrogram[0].length;
+            unitFrequency=(double)wave.getWaveHeader().getSampleRate()/2/numFrequencyUnit;	// frequency could be caught within the half of nSamples according to Nyquist theory
 
-            double[][] spectrogram = new double[frames][numFreqUnit];
+            // normalization of absoultSpectrogram
+            spectrogram=new double[numFrames][numFrequencyUnit];
 
-            // calculate the maximum amplitude and minimum amplitude
-            double maxAmp = Double.MIN_VALUE;
-            double minAmp = Double.MAX_VALUE;
-            for(int i = 0; i < frames; ++i) {
-                for(int j = 0; j < numFreqUnit; ++j) {
-                    if(absolute[i][j] > maxAmp) {
-                        maxAmp = absolute[i][j];
-                    } else if(absolute[i][j] < minAmp) {
-                        minAmp = absolute[i][j];
+            // set max and min amplitudes
+            double maxAmp=Double.MIN_VALUE;
+            double minAmp=Double.MAX_VALUE;
+            for (int i=0; i<numFrames; i++){
+                for (int j=0; j<numFrequencyUnit; j++){
+                    if (absoluteSpectrogram[i][j]>maxAmp){
+                        maxAmp=absoluteSpectrogram[i][j];
+                    }
+                    else if(absoluteSpectrogram[i][j]<minAmp){
+                        minAmp=absoluteSpectrogram[i][j];
                     }
                 }
             }
+            // end set max and min amplitudes
 
-            // make sure the minAmp is greater than 0
-            double minValidAmp = 0.00000000001F;
-            if (minAmp == 0){
-                minAmp = minValidAmp;
+            // normalization
+            // avoiding divided by zero
+            double minValidAmp=0.00000000001F;
+            if (minAmp==0){
+                minAmp=minValidAmp;
             }
 
-            // calculate the normalized spectrogram
-            double difference = Math.log10(maxAmp / minAmp);
-            for(int i = 0; i < frames; ++i) {
-                for(int j = 0; j < numFreqUnit; ++j) {
-                    if(absolute[i][j] < minValidAmp) {
-                        spectrogram[i][j] = 0;
-                    } else {
-                        spectrogram[i][j] = Math.log(absolute[i][j] / minAmp) / difference;
+            double diff=Math.log10(maxAmp/minAmp);	// perceptual difference
+            for (int i=0; i<numFrames; i++){
+                for (int j=0; j<numFrequencyUnit; j++){
+                    if (absoluteSpectrogram[i][j]<minValidAmp){
+                        spectrogram[i][j]=0;
+                    }
+                    else{
+                        spectrogram[i][j]=(Math.log10(absoluteSpectrogram[i][j]/minAmp))/diff;
                     }
                 }
             }
-            this.data = spectrogram;
-            return spectrogram;
+            // end normalization
         }
-        return null;
     }
 
     /**
-     * Calculate the hamming window for the default FFT sample size
+     * Get spectrogram: spectrogram[time][frequency]=intensity
      *
-     * @return The hamming window
+     * @return	logarithm normalized spectrogram
      */
-    private double[] getHammingWindow() {
-        int m = FFT_SAMPLE_SIZE / 2;
-        double r;
-        double pi = Math.PI;
-        double[] w = new double[FFT_SAMPLE_SIZE];
-        r = pi / (m + 1);
-        for (int n = -m; n < m; n++) {
-            w[m + n] = 0.5f + 0.5f * Math.cos(n * r);
-        }
-        return w;
+    public double[][] getNormalizedSpectrogramData(){
+        return spectrogram;
     }
 
     /**
-     * Get the frequency intensities
+     * Get spectrogram: spectrogram[time][frequency]=intensity
      *
-     * @param amplitudes amplitudes of the signal
-     *
-     * @return intensities of each frequency unit: mag[frequency_unit] = intensity
+     * @return	absolute spectrogram
      */
-    private double[] getMagnitudes(double[] amplitudes) {
-        int sampleSize = amplitudes.length;
-
-        // call the fft and transform the complex numbers
-        new FFT(sampleSize / 2, -1).transform(amplitudes);
-
-        // even indexes (0,2,4,6,...) are real parts
-        // odd indexes (1,3,5,7,...) are imaginary parts
-        int indexSize = sampleSize / 2;
-
-        // FFT produces a transformed pair of arrays where the first half of the
-        // values represent positive frequency components and the second half
-        // represents negative frequency components.
-        // we omit the negative ones
-        int positiveSize = indexSize / 2;
-
-        // calculate the intensities (magnitudes)
-        double[] mag = new double[positiveSize];
-        for (int i = 0; i < indexSize; i += 2) {
-            mag[i / 2] = Math.sqrt(amplitudes[i] * amplitudes[i] + amplitudes[i + 1] * amplitudes[i + 1]);
-        }
-        return mag;
+    public double[][] getAbsoluteSpectrogramData(){
+        return absoluteSpectrogram;
     }
 
+    public int getNumFrames(){
+        return numFrames;
+    }
+
+    public int getFramesPerSecond(){
+        return framesPerSecond;
+    }
+
+    public int getNumFrequencyUnit(){
+        return numFrequencyUnit;
+    }
+
+    public double getUnitFrequency(){
+        return unitFrequency;
+    }
+
+    public int getFftSampleSize() {
+        return fftSampleSize;
+    }
+
+    public int getOverlapFactor() {
+        return overlapFactor;
+    }
 }
